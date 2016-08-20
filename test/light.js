@@ -1,4 +1,5 @@
-var EVS = require("../lib/evshield");
+require("./common/bootstrap");
+
 var proto = [{
   name: "within"
 }];

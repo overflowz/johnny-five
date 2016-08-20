@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 var Pins = require("../lib/board.pins");
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 9007199254740991;
 
@@ -12,6 +14,7 @@ exports["Pin.prototype[isType]"] = {
     done();
   },
   tearDown: function(done) {
+    Board.purge();
     // Reset the cached conversion mechanism.
     Pins.normalize.convert = null;
     done();
@@ -44,6 +47,7 @@ exports["Pin.prototype[isType] overrides"] = {
     done();
   },
   tearDown: function(done) {
+    Board.purge();
     // Reset the cached conversion mechanism.
     Pins.normalize.convert = null;
     done();
@@ -67,6 +71,7 @@ exports["Pin.prototype[isType] overrides"] = {
 
 exports["static"] = {
   tearDown: function(done) {
+    Board.purge();
     // Reset the cached conversion mechanism.
     Pins.normalize.convert = null;
 

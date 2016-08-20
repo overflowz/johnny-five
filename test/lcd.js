@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 var lcdChars = require("../lib/lcd-chars.js");
 var util = require("util");
 
@@ -168,7 +170,7 @@ exports["LCD"] = {
     this.lcd.cursor();
     test.ok(!scSpy.called);
     test.ok(cSpy.calledOnce);
-    test.ok(cSpy.firstCall.args[0] & this.lcd.OP.CURSORON, "command not called with this.lcd.OP.CURSORON bit high");
+    test.ok(cSpy.firstCall.args[0] & this.lcd.REGISTER.CURSORON, "command not called with this.lcd.REGISTER.CURSORON bit high");
 
     cSpy.reset();
     this.lcd.cursor(1, 1);
@@ -186,7 +188,7 @@ exports["LCD"] = {
 
     this.lcd.noCursor();
     test.ok(cSpy.calledOnce);
-    test.ok(0 === (cSpy.firstCall.args[0] & this.lcd.OP.CURSORON), "command not called with this.lcd.OP.CURSORON bit low");
+    test.ok(0 === (cSpy.firstCall.args[0] & this.lcd.REGISTER.CURSORON), "command not called with this.lcd.REGISTER.CURSORON bit low");
 
     test.done();
   },
@@ -203,21 +205,21 @@ exports["LCD"] = {
       test.strictEqual(this.lcd.createChar(num, charMap), num & 7, "Incorrect returned address");
 
       test.strictEqual(cSpy.callCount, 9, "Improper command call count");
-      test.ok(cSpy.firstCall.calledWith(this.lcd.OP.DATA | ((num > 7 ? num & 7 : num) << 3)),
+      test.ok(cSpy.firstCall.calledWith(this.lcd.REGISTER.DATA | ((num > 7 ? num & 7 : num) << 3)),
         "DATA mask is incorrect");
       for (var i = 0, l = charMap.length; i < l; ++i) {
         test.ok(cSpy.getCall(i + 1).calledWith(0x40, charMap[i]), "CharMap call #" + (i + 1) + " incorrect");
       }
     }
 
-    // Named-based: rotating addresses (from this.lcd.OP.MEMORYLIMIT -1 down), ignores existing name
+    // Named-based: rotating addresses (from this.lcd.REGISTER.MEMORYLIMIT -1 down), ignores existing name
     ["foo", "bar", "baz", "bar"].forEach(function(name, index) {
       cSpy.reset();
-      var addr = this.lcd.OP.MEMORYLIMIT - (1 + index % this.lcd.OP.MEMORYLIMIT);
+      var addr = this.lcd.REGISTER.MEMORYLIMIT - (1 + index % this.lcd.REGISTER.MEMORYLIMIT);
       test.strictEqual(this.lcd.createChar(name, charMap), addr, "Incorrect returned address");
 
       test.strictEqual(cSpy.callCount, 9, "Improper command call count");
-      test.ok(cSpy.firstCall.calledWith(this.lcd.OP.DATA | (addr << 3)),
+      test.ok(cSpy.firstCall.calledWith(this.lcd.REGISTER.DATA | (addr << 3)),
         "DATA mask is incorrect");
       for (var i = 0, l = charMap.length; i < l; ++i) {
         test.ok(cSpy.getCall(i + 1).calledWith(0x40, charMap[i]), "CharMap call #" + (i + 1) + " incorrect");
@@ -268,7 +270,7 @@ exports["LCD"] = {
   printSpecialTexts: function(test) {
     // No test.expect() as these are a bit cumbersome/coupled to obtain
 
-    // These assume this.lcd.OP.MEMORYLIMIT is 8, for readability
+    // These assume this.lcd.REGISTER.MEMORYLIMIT is 8, for readability
     var sentences = [
       [":heart:", "\07"],
 
@@ -408,37 +410,85 @@ exports["LCD - I2C (JHD1313M1)"] = {
   },
 
   bgColor: function(test) {
-    test.expect(8);
+    test.expect(36);
 
     var lcd = new LCD({
       controller: "JHD1313M1",
       board: this.board
     });
 
-    this.hexRgb = this.sandbox.spy(converter.hex, "rgb");
-    this.keyRgb = this.sandbox.spy(converter.keyword, "rgb");
+    this.ToRGB = this.sandbox.spy(RGB, "ToRGB");
+    this.i2cWrite.reset();
 
     lcd.bgColor([0, 0, 0]);
 
-    test.equal(this.keyRgb.callCount, 0);
-    test.equal(this.hexRgb.callCount, 0);
+    test.equal(this.ToRGB.callCount, 1);
+    test.deepEqual(this.ToRGB.firstCall.args, [[0, 0, 0], undefined, undefined]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0, green: 0, blue: 0});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0 ] ]);
 
-    lcd.bgColor("blue");
+    this.ToRGB.reset();
+    this.i2cWrite.reset();
 
-    test.equal(this.keyRgb.callCount, 1);
-    test.equal(this.hexRgb.callCount, 0);
+    lcd.bgColor(0xff, 0xff, 0xff);
 
+    test.equal(this.ToRGB.callCount, 1);
+    test.deepEqual(this.ToRGB.firstCall.args, [0xff, 0xff, 0xff]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0xFF, green: 0xFF, blue: 0xFF});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0xFF ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0xFF ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0xFF ] ]);
+
+    this.ToRGB.reset();
+    this.i2cWrite.reset();
 
     lcd.bgColor("ff0000");
 
-    test.equal(this.keyRgb.callCount, 2);
-    test.equal(this.hexRgb.callCount, 1);
+    test.equal(this.ToRGB.callCount, 1);
+    test.deepEqual(this.ToRGB.firstCall.args, ["ff0000", undefined, undefined]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0xFF, green: 0, blue: 0});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0xFF ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0 ] ]);
+
+    this.ToRGB.reset();
+    this.i2cWrite.reset();
 
     lcd.bgColor("#ff0000");
 
-    test.equal(this.keyRgb.callCount, 3);
-    test.equal(this.hexRgb.callCount, 2);
+    test.equal(this.ToRGB.callCount, 1);
+    test.deepEqual(this.ToRGB.firstCall.args, ["#ff0000", undefined, undefined]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0xFF, green: 0, blue: 0});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0xFF ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0 ] ]);
 
+    this.ToRGB.reset();
+    this.i2cWrite.reset();
+
+    lcd.bgColor({red: 0, green: 0xFF, blue: 0});
+
+    test.equal(this.ToRGB.callCount, 1);
+    test.deepEqual(this.ToRGB.firstCall.args, [{red: 0, green: 0xFF, blue: 0}, undefined, undefined]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0, green: 0xFF, blue: 0});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0xFF ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0 ] ]);
+
+    this.ToRGB.reset();
+    this.i2cWrite.reset();
+
+    lcd.bgColor("blue");
+
+    // This path is taken twice for the keyword cases
+    test.equal(this.ToRGB.callCount, 2);
+    test.deepEqual(this.ToRGB.firstCall.args, ["blue", undefined, undefined]);
+    test.deepEqual(this.ToRGB.lastCall.returnValue, {red: 0, green: 0, blue: 0xFF});
+    test.deepEqual(this.i2cWrite.getCall(0).args, [ 98, [ 4, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(1).args, [ 98, [ 3, 0 ] ]);
+    test.deepEqual(this.i2cWrite.getCall(2).args, [ 98, [ 2, 0xFF ] ]);
 
     test.done();
   },

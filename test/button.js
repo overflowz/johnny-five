@@ -1,4 +1,4 @@
-var EVS = require("../lib/evshield");
+require("./common/bootstrap");
 
 var proto = [];
 var instance = [{
@@ -18,6 +18,42 @@ var instance = [{
 }];
 
 
+exports["Button"] = {
+  setUp: function(done) {
+    this.sandbox = sinon.sandbox.create();
+    this.clock = this.sandbox.useFakeTimers();
+    this.board = newBoard();
+    this.debounce = this.sandbox.stub(Fn, "debounce", function(fn) {
+      return fn;
+    });
+    this.digitalRead = this.sandbox.spy(MockFirmata.prototype, "digitalRead");
+    this.button = new Button({
+      pin: 8,
+      board: this.board
+    });
+
+    done();
+  },
+
+  tearDown: function(done) {
+    Board.purge();
+    Button.purge();
+    this.sandbox.restore();
+    done();
+  },
+
+  instanceof: function(test) {
+    test.expect(1);
+    test.equal(Button(9) instanceof Button, true);
+    test.done();
+  },
+
+  pinValue: function(test) {
+    test.expect(1);
+    test.equal(Button({ pin: "XYZ"}).pin, "XYZ");
+    test.done();
+  },
+};
 
 exports["Button -- Digital Pin"] = {
   setUp: function(done) {
@@ -38,6 +74,7 @@ exports["Button -- Digital Pin"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Button.purge();
     this.sandbox.restore();
     done();
   },
@@ -154,6 +191,7 @@ exports["Button -- Analog Pin"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Button.purge();
     this.sandbox.restore();
     done();
   },
@@ -236,6 +274,7 @@ exports["Button -- Value Inversion"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Button.purge();
     this.sandbox.restore();
     done();
   },
@@ -356,6 +395,7 @@ exports["Button -- EVS_EV3"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Button.purge();
     this.sandbox.restore();
     done();
   },
@@ -449,6 +489,7 @@ exports["Button -- EVS_NXT"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Button.purge();
     this.sandbox.restore();
     done();
   },
@@ -532,6 +573,12 @@ exports["Button.Collection"] = {
     Board.purge();
     this.sandbox.restore();
     done();
+  },
+
+  instanceof: function(test) {
+    test.expect(1);
+    test.equal(Buttons([9]) instanceof Buttons, true);
+    test.done();
   },
 
   data: function(test) {
@@ -654,5 +701,91 @@ exports["Button.Collection"] = {
     test.equal(this.sensors[3].value, 1);
     test.done();
 
+  },
+};
+
+exports["Button -- TINKERKIT"] = {
+  setUp: function(done) {
+    this.sandbox = sinon.sandbox.create();
+    this.board = newBoard();
+    this.debounce = this.sandbox.stub(Fn, "debounce", function(fn) {
+      return fn;
+    });
+
+    this.pinMode = this.sandbox.spy(MockFirmata.prototype, "pinMode");
+    this.analogRead = this.sandbox.spy(MockFirmata.prototype, "analogRead");
+
+    this.button = new Button({
+      controller: "TINKERKIT",
+      pin: "I0",
+      board: this.board
+    });
+
+    done();
+  },
+
+  tearDown: function(done) {
+    Board.purge();
+    Button.purge();
+    this.sandbox.restore();
+    done();
+  },
+
+  pinTranslation: function(test) {
+    test.expect(1);
+    // translates through to an analog pin 0
+    test.equal(this.button.pin, 0);
+    test.done();
+  },
+
+  initialization: function(test) {
+    test.expect(2);
+    test.equal(this.pinMode.callCount, 1);
+    test.equal(this.analogRead.callCount, 1);
+    test.done();
+  },
+
+  down: function(test) {
+    test.expect(1);
+
+    var callback = this.analogRead.firstCall.args[1];
+
+    this.button.on("down", function() {
+      test.ok(true);
+      test.done();
+    });
+
+    callback(513);
+  },
+
+  up: function(test) {
+
+    var callback = this.analogRead.firstCall.args[1];
+    test.expect(1);
+
+    this.button.on("up", function() {
+      test.ok(true);
+      test.done();
+    });
+    callback(513);
+    callback(511);
+  },
+
+  hold: function(test) {
+    test.expect(1);
+
+    this.clock = this.sandbox.useFakeTimers();
+    var callback = this.analogRead.firstCall.args[1];
+
+    //fake timers dont play nice with __.debounce
+    this.button.on("hold", function() {
+      test.ok(true);
+      test.done();
+    });
+
+    this.button.holdtime = 10;
+    callback(513);
+    this.clock.tick(11);
+    callback(511);
   },
 };

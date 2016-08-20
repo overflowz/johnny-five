@@ -9,13 +9,13 @@
 
 
 
-##### Breadboard for "LCD - I2C"
+##### Using a Grove RGB LCD with and without the Grove Shield
 
 
 
-![docs/breadboard/lcd-i2c.png](breadboard/lcd-i2c.png)<br>
+![docs/breadboard/lcd-JHD1313M1.png](breadboard/lcd-JHD1313M1.png)<br>
 
-Fritzing diagram: [docs/breadboard/lcd-i2c.fzz](breadboard/lcd-i2c.fzz)
+Fritzing diagram: [docs/breadboard/lcd-JHD1313M1.fzz](breadboard/lcd-JHD1313M1.fzz)
 
 &nbsp;
 

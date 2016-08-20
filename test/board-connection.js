@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 exports["Board Connection"] = {
   setUp: function(done) {
     this.sandbox = sinon.sandbox.create();
@@ -9,6 +11,7 @@ exports["Board Connection"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Serial.purge();
     this.sandbox.restore();
     done();
   },

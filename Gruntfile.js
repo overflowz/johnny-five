@@ -129,6 +129,17 @@ module.exports = function(grunt) {
     }
   });
 
+  grunt.loadNpmTasks("grunt-contrib-watch");
+  grunt.loadNpmTasks("grunt-contrib-nodeunit");
+  grunt.loadNpmTasks("grunt-contrib-jshint");
+  grunt.loadNpmTasks("grunt-jsbeautifier");
+  grunt.loadNpmTasks("grunt-jscs");
+
+  // grunt.registerTask("beautify", ["jsbeautifier"]);
+
+  grunt.registerTask("default", ["jshint", "jscs", "nodeunit"]);
+  grunt.registerTask("test", ["jshint", "jscs", "nodeunit:complete"]);
+
   grunt.registerTask("example", "Create an example program, usage: \"grunt expample:<file-name>[.js]\"", function(fileName) {
 
     if (!fileName.endsWith(".js")) {
@@ -173,6 +184,23 @@ module.exports = function(grunt) {
     grunt.task.run("nodeunit:file:" + file);
   });
 
+  grunt.registerTask("qc", "Run JSHint & JSCS checks on a file or files by specifying a file name or glob expression. Usage: 'grunt qc' or 'grunt qc:<file.ext>' or 'grunt qc:<expr>'", function(input) {
+
+    if (input) {
+      primaryFiles.length = 0;
+
+      file.expand(input).forEach(function(file) {
+        primaryFiles.push(file);
+      });
+    }
+
+    grunt.task.run("jshint");
+    grunt.task.run("jscs");
+  });
+
+  grunt.registerTask("qc:examples", "Run JSHint checks on the examples in 'eg/'", function() {
+    grunt.task.run("qc:eg/**/*.js");
+  });
 
   grunt.registerTask("beautify", "Cleanup a single or limited set of files; usage: 'grunt beautify:file.js' or 'grunt beautify:{file-a.js,file-b.js}' (extension optional)", function(input) {
 
@@ -195,17 +223,6 @@ module.exports = function(grunt) {
     grunt.task.run("nodeunit");
   });
 
-  grunt.loadNpmTasks("grunt-contrib-watch");
-  grunt.loadNpmTasks("grunt-contrib-nodeunit");
-  grunt.loadNpmTasks("grunt-contrib-jshint");
-  grunt.loadNpmTasks("grunt-jsbeautifier");
-  grunt.loadNpmTasks("grunt-jscs");
-
-  // grunt.registerTask("beautify", ["jsbeautifier"]);
-
-  grunt.registerTask("default", ["jshint", "jscs", "nodeunit"]);
-  // Explicit test task runs complete set of tests
-  grunt.registerTask("test", ["jshint", "jscs", "nodeunit:complete"]);
 
   grunt.registerMultiTask("examples", "Generate examples", function() {
     // Concat specified files.
@@ -447,8 +464,6 @@ module.exports = function(grunt) {
     var done = this.async();
     var temp = "";
     var previous = "";
-    var thisPatch;
-    var lastPatch;
 
     if (!version) {
       version = grunt.config("pkg.version");
@@ -472,10 +487,9 @@ module.exports = function(grunt) {
           grunt changelog:v0.8.73
 
        */
-      thisPatch = version.replace(/^v/, "").split(".").pop();
-      lastPatch = Number(thisPatch) - 1;
-      previous = version.replace(thisPatch, lastPatch);
-      version = "HEAD";
+      var tags = cp.execSync("git tag").toString().split("\n");
+      var index = tags.indexOf(version);
+      previous = tags[index - 1];
     }
 
     cp.exec("git log --format='%H|%h|%an|%s' " + previous + ".." + version, function(error, result) {
@@ -497,6 +511,7 @@ module.exports = function(grunt) {
         return accum;
       }, "");
 
+      log.writeln("\n");
       log.writeln(templates.changelog({ rows: rows }));
 
       done();

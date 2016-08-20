@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 exports["Board.Component"] = {
   setUp: function(done) {
     this.board = newBoard();
@@ -7,6 +9,7 @@ exports["Board.Component"] = {
 
   tearDown: function(done) {
     Board.purge();
+    Serial.purge();
     Expander.purge();
     this.sandbox.restore();
     done();

@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 function Output(opts) {
   if (typeof opts === "number") {
     opts = {
@@ -91,6 +93,36 @@ Collection.installMethodForwarding(
 );
 
 
+function Other(opts) {
+  Emitter.call(this);
+
+  if (typeof opts === "number") {
+    opts = {
+      pin: opts
+    };
+  }
+
+  Object.assign(this, opts);
+
+  this.period = opts.period || 10;
+  this.value = random10bv();
+
+  this.on("data", function(value) {
+    this.value = value;
+  }.bind(this));
+
+}
+
+Other.prototype = Object.create(Emitter.prototype, {
+  constructor: {
+    value: Other
+  }
+});
+
+Other.prototype.c = function() {};
+Other.prototype.d = function() {};
+
+
 exports["Collection"] = {
   setUp: function(done) {
     this.sandbox = sinon.sandbox.create();
@@ -168,6 +200,18 @@ exports["Collection"] = {
     test.done();
   },
 
+  pinsIsArray: function(test) {
+    test.expect(2);
+
+    var outputs = new Outputs({
+      pins: [ [ 1, 2, 3 ], [ 4, 5, 6 ] ],
+    });
+    test.deepEqual(outputs[0].pins, [1, 2, 3]);
+    test.deepEqual(outputs[1].pins, [4, 5, 6]);
+
+    test.done();
+  },
+
   add: function(test) {
     test.expect(3);
 
@@ -203,6 +247,14 @@ exports["Collection"] = {
       test.equal(output, this);
     });
 
+    test.done();
+  },
+
+  byId: function(test) {
+    test.expect(1);
+
+    this.outputs[0].id = "test";
+    test.equal(this.outputs.byId("test"), this.outputs[0]);
     test.done();
   },
 
@@ -244,6 +296,17 @@ exports["Collection"] = {
     test.equal(this.outputs.slice(0).includes(this.outputs[1]), true);
     test.equal(this.outputs.slice(0).includes(this.outputs[2]), true);
     test.equal(this.outputs.slice(0) instanceof Outputs, true);
+    test.done();
+  },
+
+  map: function(test) {
+    test.expect(1);
+
+    var mapped = this.outputs.map(function(output, index) {
+      return index;
+    });
+
+    test.deepEqual(mapped, [0, 1, 2]);
     test.done();
   },
 
@@ -328,6 +391,31 @@ exports["Collection.Emitter"] = {
     test.done();
   },
 
+  period: function(test) {
+    test.expect(3);
+
+    test.equal(this.inputs.period, 5);
+    this.inputs.period = 10;
+    test.equal(this.inputs.period, 10);
+    this.inputs.period = 5;
+    test.equal(this.inputs.period, 5);
+
+    test.done();
+  },
+
+  frequency: function(test) {
+    test.expect(1);
+
+    var inputs = new Inputs({
+      pins: [1, 2, 3],
+      frequency: 50,
+    });
+
+    test.equal(inputs.period, 20);
+
+    test.done();
+  },
+
   add: function(test) {
     test.expect(3);
 
@@ -379,8 +467,19 @@ exports["Collection.Emitter"] = {
     test.done();
   },
 
+  map: function(test) {
+    test.expect(1);
+
+    var mapped = this.inputs.map(function(output, index) {
+      return index;
+    });
+
+    test.deepEqual(mapped, [0, 1, 2]);
+    test.done();
+  },
+
   data: function(test) {
-    test.expect(5);
+    test.expect(6);
 
     var spy = this.sandbox.spy();
 
@@ -398,6 +497,7 @@ exports["Collection.Emitter"] = {
     this.inputs[0].emit("data", 2);
 
     test.equal(spy.callCount, 1);
+    test.equal(spy.lastCall.args[0], this.inputs);
 
     test.equal(this.inputs.length, 3);
     test.equal(this.inputs[0].value, 2);
@@ -500,5 +600,151 @@ exports["Collection.Emitter"] = {
     test.equal(spy.callCount, 6);
     test.done();
   },
+};
+
+exports["Collection.Emitter -- Mixed Emitters"] = {
+  setUp: function(done) {
+    this.sandbox = sinon.sandbox.create();
+    this.clock = this.sandbox.useFakeTimers();
+
+    this.input = new Input(1);
+    this.other = new Other(5);
+    this.emitters = new Collection.Emitter([
+      this.input,
+      this.other,
+    ]);
+
+    done();
+  },
+
+  tearDown: function(done) {
+    this.sandbox.restore();
+    Collection.purge();
+    done();
+  },
+
+  data: function(test) {
+    // test.expect(6);
+
+    var spy = this.sandbox.spy();
+
+    this.emitters.on("data", spy);
+
+    this.clock.tick(1);
+    this.input.emit("data", 1023);
+    this.other.emit("data", 1023);
+    this.clock.tick(2);
+
+    this.input.emit("data", 1);
+    this.other.emit("data", 1);
+    this.clock.tick(5);
+
+    this.input.emit("data", 2);
+
+    test.equal(spy.callCount, 1);
+    test.equal(spy.lastCall.args[0], this.emitters);
+
+    // console.log(this.emitters);
+    test.equal(this.emitters.length, 2);
+    test.equal(this.emitters[0].value, 2);
+    test.equal(this.emitters[1].value, 1);
+
+
+    test.done();
+  },
+
+  // change: function(test) {
+  //   test.expect(4);
+
+  //   this.inputs = new Inputs({
+  //     pins: ["A0", "A1", "A2"],
+  //     board: this.board,
+  //   });
+
+  //   var spy = this.sandbox.spy();
+
+  //   this.inputs.on("change", spy);
+
+  //   this.inputs[0].emit("data", 0);
+  //   this.inputs[1].emit("data", 0);
+  //   this.inputs[2].emit("data", 0);
+  //   this.inputs[0].emit("data", 1023);
+  //   this.inputs[1].emit("data", 1023);
+  //   this.inputs[2].emit("data", 1023);
+  //   this.inputs[0].emit("data", 1);
+  //   this.inputs[1].emit("data", 1);
+  //   this.inputs[2].emit("data", 1);
+  //   this.inputs[0].emit("data", 2);
+
+  //   this.inputs[0].emit("change");
+  //   this.inputs[1].emit("change");
+  //   this.inputs[2].emit("change");
+
+
+  //   test.equal(this.inputs.length, 3);
+  //   test.equal(this.inputs[0].value, 2);
+  //   test.equal(this.inputs[1].value, 1);
+  //   test.equal(this.inputs[2].value, 1);
+
+  //   test.done();
+
+  // },
+
+  // dataFromLateAddition: function(test) {
+  //   test.expect(5);
+
+  //   var spy = this.sandbox.spy();
+
+  //   this.inputs.on("data", spy);
+
+  //   this.clock.tick(1);
+
+  //   this.inputs[0].emit("data", 1023);
+  //   this.inputs[1].emit("data", 1023);
+  //   this.inputs[2].emit("data", 1023);
+  //   this.clock.tick(1);
+
+  //   this.inputs.add(new Input(10));
+
+  //   this.clock.tick(2);
+
+  //   this.inputs[3].emit("data", 1);
+  //   this.inputs[0].emit("data", 1);
+  //   this.inputs[1].emit("data", 1);
+  //   this.inputs[2].emit("data", 1);
+  //   this.clock.tick(3);
+  //   this.inputs[3].emit("data", 2);
+
+  //   test.equal(this.inputs.length, 4);
+  //   test.equal(this.inputs[0].value, 1);
+  //   test.equal(this.inputs[1].value, 1);
+  //   test.equal(this.inputs[2].value, 1);
+  //   test.equal(this.inputs[3].value, 2);
+  //   test.done();
+
+  // },
+
+  // respondToUnknownEvents: function(test) {
+  //   test.expect(2);
+
+  //   var spy = this.sandbox.spy();
+
+  //   this.inputs.on("unknown-1", spy);
+
+  //   this.inputs[0].emit("unknown-1");
+  //   this.inputs[1].emit("unknown-1");
+  //   this.inputs[2].emit("unknown-1");
+
+  //   test.equal(spy.callCount, 3);
+
+  //   this.inputs.on("unknown-2", spy);
+
+  //   this.inputs[0].emit("unknown-2");
+  //   this.inputs[1].emit("unknown-2");
+  //   this.inputs[2].emit("unknown-2");
+
+  //   test.equal(spy.callCount, 6);
+  //   test.done();
+  // },
 
 };

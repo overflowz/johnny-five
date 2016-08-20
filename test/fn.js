@@ -1,3 +1,5 @@
+require("./common/bootstrap");
+
 exports["Fn"] = {
   setUp: function(done) {
     done();
@@ -9,19 +11,16 @@ exports["Fn"] = {
 
   map: function(test) {
     test.expect(3);
-
     test.equal(Fn.map(1009, 300, 1009, 0, 255), 255);
     test.equal(Fn.map(300, 300, 1009, 0, 255), 0);
     test.equal(Fn.map(500, 0, 1000, 0, 255), 127);
-
     test.done();
   },
 
   fmap: function(test) {
-    test.expect(1);
-
+    test.expect(2);
     test.equal(Fn.fmap(500, 0, 1000, 0, 255), 127.5);
-
+    test.equal(Fn.fmap(512, 0, 1023, 0, 255), 127.6246337890625);
     test.done();
   },
 
@@ -159,14 +158,14 @@ exports["Fn"] = {
     test.done();
   },
 
-  bitsIn: function(test) {
+  bitSize: function(test) {
     test.expect(5);
 
-    test.equal(Fn.bitsIn(1000), 10);
-    test.equal(Fn.bitsIn(1024), 10);
-    test.equal(Fn.bitsIn(Number.MAX_SAFE_INTEGER), 53);
-    test.equal(Fn.bitsIn(Number.MAX_VALUE), 1024);
-    test.equal(Fn.bitsIn(8), 3);
+    test.equal(Fn.bitSize(1000), 10);
+    test.equal(Fn.bitSize(1024), 10);
+    test.equal(Fn.bitSize(Number.MAX_SAFE_INTEGER), 53);
+    test.equal(Fn.bitSize(Number.MAX_VALUE), 1024);
+    test.equal(Fn.bitSize(8), 3);
 
     test.done();
   },
@@ -180,8 +179,46 @@ exports["Fn"] = {
     test.equal(Fn.toFixed(3 / 7, 1), 0.4);
     test.done();
   },
+  toFixedDoesNotThrow: function(test) {
+    test.expect(2);
+
+    test.doesNotThrow(function() {
+      Fn.toFixed(null);
+    });
+    test.doesNotThrow(function() {
+      Fn.toFixed(undefined);
+    });
+    test.done();
+  },
 };
 
+exports["Fn.* Consts"] = {
+  setUp: function(done) {
+    done();
+  },
+
+  tearDown: function(done) {
+    done();
+  },
+
+  RAD_TO_DEG: function(test) {
+    test.expect(1);
+    test.equal(Fn.RAD_TO_DEG, 180 / Math.PI);
+    test.done();
+  },
+
+  DEG_TO_RAD: function(test) {
+    test.expect(1);
+    test.equal(Fn.DEG_TO_RAD, Math.PI / 180);
+    test.done();
+  },
+
+  TAU: function(test) {
+    test.expect(1);
+    test.equal(Fn.TAU, 2 * Math.PI);
+    test.done();
+  },
+};
 
 var bitSizes = [ 4, 8, 10, 12, 16, 20, 24, 32 ];
 
@@ -242,7 +279,7 @@ exports["Fn.POW_2_*"] = {
   },
 
   maxSafeIntegerBits: function(test) {
-    var MAX = Fn.bitsIn(Number.MAX_SAFE_INTEGER);
+    var MAX = Fn.bitSize(Number.MAX_SAFE_INTEGER);
 
     test.expect(MAX);
 

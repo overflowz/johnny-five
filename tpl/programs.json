@@ -840,15 +840,11 @@
         "title": "LCD - Runner 16x2"
       },
       {
-        "file": "lcd-16x2-tessel-runner.js",
-        "title": "LCD - Tessel 2 16x2 Runner",
-        "breadboards": [
-          {"name": "lcd-16x2-tessel"}
-        ]
-      },
-      {
         "file": "lcd-i2c.js",
-        "title": "LCD - I2C"
+        "title": "LCD - I2C",
+        "breadboards": [
+          {"name": "lcd-JHD1313M1", "title": "Using a Grove RGB LCD with and without the Grove Shield"}
+        ]
       },
       {
         "file": "lcd-i2c-PCF8574.js",
@@ -857,6 +853,24 @@
       {
         "file": "lcd-i2c-runner.js",
         "title": "LCD - I2C Runner"
+      },
+      {
+        "file": "lcd-rgb-tessel-grove-JHD1313M1.js",
+        "title": "Tessel 2 + Grove - RGB LCD Display"
+      },
+      {
+        "file": "lcd-rgb-bgcolor-previewer.js",
+        "title": "Grove - RGB LCD Color Previewer",
+        "breadboards": [
+          {"name": "lcd-JHD1313M1", "title": "Using a Grove RGB LCD with and without the Grove Shield"}
+        ]
+      },
+      {
+        "file": "lcd-rgb-bgcolor-previewer-tessel.js",
+        "title": "Tessel 2 + Grove - RGB LCD Color Previewer",
+        "breadboards": [
+          {"name": "lcd-rgb-tessel-grove-JHD1313M1", "title": "Tessel 2 RGB LCD Color Previewer"}
+        ]
       }
     ]
   },
@@ -1050,6 +1064,10 @@
       {
         "file": "accelerometer.js",
         "title": "Accelerometer"
+      },
+      {
+        "file": "accelerometer-LIS3DH.js",
+        "title": "Accelerometer - LIS3DH"
       },
       {
         "file": "accelerometer-MMA8452.js",
@@ -1393,6 +1411,11 @@
         "description": "Using an MCP23008 Expander as a Virtual Board (8 Pin Digital IO)"
       },
       {
+        "file": "expander-LIS3DH.js",
+        "title": "Expander - LIS3DH",
+        "description": "Using an LIS3DH Expander as a Virtual Board (3 Pin Analog Input: 0.9V-1.8V)"
+      },
+      {
         "file": "expander-PCF8574.js",
         "title": "Expander - PCF8574",
         "description": "Using an PCF8574 Expander as a Virtual Board (WaveShare 8 Pin Digital IO)"
@@ -1642,8 +1665,13 @@
         "description": "Using Johnny-Five with Grove's RGB LCD component on the Intel Edison Arduino Breakout. This shield and component will work with any Arduino pin-out compatible hardware platform."
       },
       {
+        "file": "grove-lcd-rgb-bgcolor-previewer-edison.js",
+        "title": "Intel Edison + Grove - RGB LCD Color Previewer",
+        "description": "Using Johnny-Five with Grove's RGB LCD component on the Intel Edison Arduino Breakout. This shield and component will work with any Arduino pin-out compatible hardware platform."
+      },
+      {
         "file": "grove-lcd-rgb-temperature-display-edison.js",
-        "title": "Intel Edison + Grove - LCD RGB temperature display",
+        "title": "Intel Edison + Grove - RGB LCD temperature display",
         "description": "Using Johnny-Five with Grove's RGB LCD and Thermometer components on the Intel Edison Arduino Breakout. This shield and component will work with any Arduino pin-out compatible hardware platform."
       },
       {
@@ -1712,7 +1740,7 @@
       },
       {
         "file": "grove-lcd-rgb-temperature-display.js",
-        "title": "Grove - LCD RGB temperature display"
+        "title": "Grove - RGB LCD temperature display"
       },
       {
         "file": "grove-servo.js",
